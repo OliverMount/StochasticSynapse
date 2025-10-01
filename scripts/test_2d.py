@@ -7,7 +7,7 @@ h.load_file("stdrun.hoc")
 
 # Simulation params
 n_cells = 5
-tstop = 150
+tstop = 300
 release_prob = 0.1
 
 # Create shared NetStim
@@ -34,8 +34,7 @@ for i in range(n_cells):
     somas.append(soma)
     
     # Create synapse
-    syn = h.StochExp2Syn(soma(0.5))
-    #syn = h.GrCGABAexpStoch(soma(0.5))
+    syn = h.StochExp2Syn(soma(0.5)) 
     syn.tau1 = 0.1
     syn.tau2 = 2
     #syn.e = 0
@@ -73,13 +72,15 @@ for i, v in enumerate(voltages):
     v_shifted = np.array(v) + i * offset  # apply vertical offset
     plt.plot(times, v_shifted, label=f"Cell {i+1}")
 
-plt.xlabel("Time (ms)")
-plt.ylabel("Membrane Voltage + Offset (mV)")
-plt.title("Non-Overlapping Traces of 5 Cells to Shared Stochastic Input")
+plt.xlabel("Time (ms)",fontsize=14)
+plt.ylabel("Membrane Voltage + Offset (mV)",fontsize=14)
+plt.title(f" Release Probability : {release_prob} ",fontsize=16 )
 plt.yticks([])  # optional: hide y-axis ticks
 plt.legend()
 plt.grid(True)
+plt.tick_params(axis='both', labelsize=12) 
 plt.tight_layout()
-plt.show()
+plt.show() 
 
 
+#Non-Overlapping Traces of 5 Cells to Shared Stochastic Input

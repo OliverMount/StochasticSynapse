@@ -104,13 +104,13 @@ NET_RECEIVE(weight (uS)) {
         A = A + weight * factor
         B = B + weight * factor
         VERBATIM
-		printf("RELEASED SPIKES \n");
+		// printf("RELEASED SPIKES \n");
 		ENDVERBATIM
          
     }
     else{
       	VERBATIM
-		printf("FAILED TO RELEASE SPIKES \n");
+		// printf("FAILED TO RELEASE SPIKES \n");
 		ENDVERBATIM
     }
     
