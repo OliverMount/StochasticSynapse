@@ -1,3 +1,8 @@
+# Author: Oliver James, IBS, South Korea
+# Code testing the release probability of the stochastic synapse in CoreNEURON
+# Please make sure you run it from the inside of the src folder where x86_64 exits
+# go to src folder and run `python ../scripts/CoreNEURONtest.py` 
+
 from neuron import h
 import numpy as np
 import matplotlib.pyplot as plt
@@ -71,7 +76,7 @@ release_probs = [1.0, 0.5, 0.3, 0.1]
 fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 axes = axes.flatten()
 
-offset = 30  # vertical spacing in mV
+offset = 30   
 
 for ax, rp in zip(axes, release_probs):
     times, voltages = run_simulation(rp)

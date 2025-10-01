@@ -1,3 +1,8 @@
+# Author: Oliver James, IBS, South Korea
+# Code testing the release probability of the stochastic synapse in CoreNEURON
+# Please make sure you run it from the inside of the src folder where x86_64 exits (that which compiled with NEURON)
+# go to src folder and run `python ../scripts/NEURONtest.py` 
+
 from neuron import h
 import numpy as np
 import matplotlib.pyplot as plt
