@@ -8,6 +8,9 @@ This work is designed to aid researchers exploring probabilistic synaptic dynami
 
 
 ## Simulation of Release Probabilities
+
+The Python script (scripts/CoreNEURONtest.py or scripts/NEURONtest.py) sets up a small network of five single-compartment neurons, each modeled as a `Hodgkin-Huxley` soma, to examine the effect of stochastic synaptic release on postsynaptic membrane potential. Each neuron receives input from a shared `NetStim`spike generator, which produces a series of spikes with slight temporal variability. Synaptic transmission is mediated by `StochExp2Syn` synapses in NEURON and `StochExp2SynGPU` synapses in CoreNEURON, implementing probabilistic neurotransmitter release controlled by the release_prob parameter. Random seeds are assigned to each synapse to introduce variability in release timing and location. The simulation records the membrane voltage of each neuron over time, allowing visualization of how different release probabilities (1.0, 0.5, 0.3, 0.1) affect postsynaptic responses. The resulting voltage traces are stacked and plotted, illustrating how increased stochasticity reduces the reliability and amplitude of synaptic responses in this simple network.  
+
 ## NEURON
 
 The figure below shows non-overlapping voltage traces of 5 cells receiving shared stochastic input for different synaptic release probabilities (1.0, 0.5, 0.3, 0.1). 
