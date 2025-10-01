@@ -1,8 +1,0 @@
-StoSyn_NEURON.cpp: ../mod/StoSyn_NEURON.mod $(NOCMODL)
-	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
-	(cd "../mod";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "StoSyn_NEURON.mod"  -o "/media/oli/Research/Gitrepo/StochasticSynapse/src/x86_64" )
-
-./StoSyn_NEURON.o: StoSyn_NEURON.cpp
-	@printf " -> $(C_GREEN)Compiling$(C_RESET) /media/oli/Research/Gitrepo/StochasticSynapse/src/x86_64/$<\\n"
-	$(CXXCOMPILE) -I"../mod" $(INCLUDES) -fPIC -c "/media/oli/Research/Gitrepo/StochasticSynapse/src/x86_64/$<" -o $@
-

@@ -22,9 +22,9 @@ ENDCOMMENT
 
 NEURON {
     THREADSAFE
-    ARTIFICIAL_CELL StochExp2SynGPU 
+    POINT_PROCESS StochExp2SynGPU 
     RANGE seed1, seed2, seed3, tau1, tau2, e, i, g, release_prob 
-    BBCOREPOINTER uniform_rng 
+    BBCOREPOINTER rng 
     NONSPECIFIC_CURRENT i
 }
 
@@ -34,29 +34,6 @@ UNITS {
     (mV) = (millivolt)
     (uS) = (microsiemens)
 }
-
-VERBATIM
-#if defined(NRN_VERSION_GTEQ)
-#if NRN_VERSION_GTEQ(9,0,0)
-#define NRN_VERSION_GTEQ_9_0_0
-#endif
-#endif
-
-#ifndef NRN_VERSION_GTEQ_8_2_0
-extern int ifarg(int iarg);
-#ifndef CORENEURON_BUILD
-extern double* vector_vec(void* vv);
-extern void* vector_new1(int _i);
-extern int vector_capacity(void* vv);
-extern void* vector_arg(int iarg);
-double nrn_random_pick(void* r);
-#endif
-void* nrn_random_arg(int argpos);
-#define RANDCAST 
-#else
-#define RANDCAST (Rand*)
-#endif
-ENDVERBATIM
 
 PARAMETER {
     seed1 = 1 : First seed for random123
@@ -68,60 +45,50 @@ PARAMETER {
     tau2 = 10 (ms) <1e-9,1e9>
     e = 0 (mV)
     release_prob = 0.5 
-    
 }
 
 VERBATIM
-#include "nrnran123.h"
+#ifndef CORENEURON_BUILD
+    #include "nrnran123.h"
+#endif
 ENDVERBATIM
 
 ASSIGNED {
-    uniform_rng
-    usingR123
-    last_random : Store last generated random number
-    
-    
-    : From the the Exp2Syn mod file
-     v (mV)
+    rng
+    v (mV)
     i (nA)
     g (uS)
     factor
 }
 
 
-ASSIGNED {
-  
-}
-
 STATE {
     A (uS)
     B (uS)
 }
-  
-
- 
 
 INITIAL { 
-	LOCAL tp
-    usingR123 = 1
-    last_random = 0.0
+    LOCAL tp
     
     VERBATIM
-    /* Initialize uniform_rng pointer to NULL first */
-    _p_uniform_rng = (double*)0;
-    
-    /* Initialize random123 stream with provided seeds */
-    nrnran123_State** pv = (nrnran123_State**)(&_p_uniform_rng);
-    *pv = nrnran123_newstream3((uint32_t)seed1, (uint32_t)seed2, (uint32_t)seed3);
-    
-    /* Initialize sequence to 0 for reproducibility */
-    if (_p_uniform_rng) {
-        nrnran123_setseq((nrnran123_State*)_p_uniform_rng, 0, 0);
+    #ifndef CORENEURON_BUILD
+    /* NEURON initialization */
+    nrnran123_State** pv = (nrnran123_State**)(&_p_rng);
+    if (*pv) {
+        nrnran123_deletestream(*pv);
     }
+    *pv = nrnran123_newstream3((uint32_t)seed1, (uint32_t)seed2, (uint32_t)seed3);
+    nrnran123_setseq(*pv, 0, 0);
+    #else
+    /* CoreNEURON initialization - RNG already setup from bbcore_read */
+    if (_p_rng) {
+        nrnran123_State* rng_state = (nrnran123_State*)_p_rng;
+        nrnran123_setseq(rng_state, 0, 0);
+    }
+    #endif
     ENDVERBATIM
     
     : From the the Exp2Syn mod file
-    
     if (tau1 / tau2 > 0.9999) {
         tau1 = 0.9999 * tau2
     }
@@ -151,17 +118,10 @@ DERIVATIVE state {
  
 NET_RECEIVE(weight (uS)) {
     LOCAL rval
-    rval = urand()  : uniform random number for every net_receive call
+    rval = urand()
     if (rval < release_prob) {
         A = A + weight * factor
         B = B + weight * factor
- 		VERBATIM
-        // printf("RELEASED SPIKE\n");
-        ENDVERBATIM
-    } else {
-      	VERBATIM
-        // printf("FAILED TO RELEASE SPIKE\n");
-        ENDVERBATIM
     }
 } 
   
@@ -169,17 +129,11 @@ NET_RECEIVE(weight (uS)) {
 : Main function to generate uniform random numbers [0,1)
 FUNCTION urand() {
     VERBATIM
-    if (_p_uniform_rng) {
-        if (usingR123) {
-            _lurand = nrnran123_dblpick((nrnran123_State*)_p_uniform_rng);
-        } else {
-#ifndef CORENEURON_BUILD
-            _lurand = nrn_random_pick(RANDCAST _p_uniform_rng);
-#endif
-        }
+    if (_p_rng) {
+        nrnran123_State* rng_state = (nrnran123_State*)_p_rng;
+        _lurand = nrnran123_dblpick(rng_state);
     } else {
-        _lurand = 0.5; /* fallback value if not initialized */
-        hoc_execerror("UniformRNG: random stream not initialized", "call setSeeds() first");
+        _lurand = 0.0;
     }
     ENDVERBATIM
 }
@@ -189,11 +143,6 @@ FUNCTION urand_range(min, max) {
     urand_range = min + (max - min) * urand()
 }
 
-: Function to get uniform random integer in range [min, max]
-FUNCTION urand_int(min, max) {
-    urand_int = floor(min + (max - min + 1) * urand())
-}
-
 : Procedure to set new seeds and reinitialize the stream
 PROCEDURE setSeeds(new_seed1, new_seed2, new_seed3) {
     seed1 = new_seed1
@@ -201,59 +150,74 @@ PROCEDURE setSeeds(new_seed1, new_seed2, new_seed3) {
     seed3 = new_seed3
     
     VERBATIM
-    /* Clean up existing stream if any */
-    if (_p_uniform_rng) {
-        nrnran123_deletestream((nrnran123_State*)_p_uniform_rng);
-        _p_uniform_rng = (double*)0;
+    #ifndef CORENEURON_BUILD
+    nrnran123_State** pv = (nrnran123_State**)(&_p_rng);
+    if (*pv) {
+        nrnran123_deletestream(*pv);
     }
-    
-    /* Initialize with new seeds */
-    nrnran123_State** pv = (nrnran123_State**)(&_p_uniform_rng);
     *pv = nrnran123_newstream3((uint32_t)seed1, (uint32_t)seed2, (uint32_t)seed3);
-    
-    if (_p_uniform_rng) {
-        nrnran123_setseq((nrnran123_State*)_p_uniform_rng, 0, 0);
-        usingR123 = 1;
-    }
+    nrnran123_setseq(*pv, 0, 0);
+    #endif
     ENDVERBATIM
 }
 
-: Procedure to advance the random stream by n steps
-PROCEDURE advance_stream(n) {
-    LOCAL i
-    FROM i = 1 TO n {
-        last_random = urand()
-    }
-}
-
-: Get the last generated random number without generating a new one
-FUNCTION get_last() {
-    get_last = last_random
-}
-
-: Generate and store a new random number
-FUNCTION next_random() {
-    last_random = urand()
-    next_random = last_random
-}
-
 VERBATIM
-/* CoreNEURON serialization support */
+#ifndef CORENEURON_BUILD
+
+/* CoreNEURON serialization support - NEURON side */
 static void bbcore_write(double* dArray, int* iArray, int* doffset, int* ioffset, _threadargsproto_) {
     if (iArray) {
         uint32_t* ia = ((uint32_t*)iArray) + *ioffset;
-        nrnran123_State** pv = (nrnran123_State**)(&_p_uniform_rng);
+        nrnran123_State** pv = (nrnran123_State**)(&_p_rng);
         
         if (*pv) {
             nrnran123_getids3(*pv, ia, ia+1, ia+2);
-            
-            // Store sequence information
             char which;
             nrnran123_getseq(*pv, ia+3, &which);
             ia[4] = (int)which;
         } else {
-            // No stream initialized
-            ia[0] = ia[1] = ia[2] = ia[3] = ia[4] = 0;
+            ia[0] = (uint32_t)seed1;
+            ia[1] = (uint32_t)seed2;
+            ia[2] = (uint32_t)seed3;
+            ia[3] = 0;
+            ia[4] = 0;
+        }
+    }
+    *ioffset += 5;
+}
+
+static void bbcore_read(double* dArray, int* iArray, int* doffset, int* ioffset, _threadargsproto_) {
+    uint32_t* ia = ((uint32_t*)iArray) + *ioffset;
+    nrnran123_State** pv = (nrnran123_State**)(&_p_rng);
+    
+    if (*pv) {
+        nrnran123_deletestream(*pv);
+    }
+    *pv = nrnran123_newstream3(ia[0], ia[1], ia[2]);
+    nrnran123_setseq(*pv, ia[3], (char)ia[4]);
+    
+    *ioffset += 5;
+}
+
+#else
+
+/* CoreNEURON version of serialization */
+static void bbcore_write(double* dArray, int* iArray, int* doffset, int* ioffset, _threadargsproto_) {
+    if (iArray) {
+        uint32_t* ia = ((uint32_t*)iArray) + *ioffset;
+        nrnran123_State* rng_state = (nrnran123_State*)_p_rng;
+        
+        if (rng_state) {
+            nrnran123_getids3(rng_state, ia, ia+1, ia+2);
+            char which;
+            nrnran123_getseq(rng_state, ia+3, &which);
+            ia[4] = (int)which;
+        } else {
+            ia[0] = (uint32_t)seed1;
+            ia[1] = (uint32_t)seed2;
+            ia[2] = (uint32_t)seed3;
+            ia[3] = 0;
+            ia[4] = 0;
         }
     }
     *ioffset += 5;
@@ -262,18 +226,37 @@ static void bbcore_write(double* dArray, int* iArray, int* doffset, int* ioffset
 static void bbcore_read(double* dArray, int* iArray, int* doffset, int* ioffset, _threadargsproto_) {
     uint32_t* ia = ((uint32_t*)iArray) + *ioffset;
     
-    if (ia[0] != 0 || ia[1] != 0 || ia[2] != 0) {
-        nrnran123_State** pv = (nrnran123_State**)(&_p_uniform_rng);
-#if !NRNBBCORE
-        if (*pv) {
-            nrnran123_deletestream(*pv);
-        }
-#endif
-        *pv = nrnran123_newstream3(ia[0], ia[1], ia[2]);
-        nrnran123_setseq(*pv, ia[3], (char)ia[4]);
-        usingR123 = 1;
-    }
+    /* CoreNEURON: create new stream with the 4-argument version */
+    nrnran123_State* rng_state = nrnran123_newstream3(ia[0], ia[1], ia[2]);
+    _p_rng = (double*)rng_state;
+    nrnran123_setseq(rng_state, ia[3], (char)ia[4]);
     
     *ioffset += 5;
 }
+
+#endif
 ENDVERBATIM
+
+CONSTRUCTOR {
+    VERBATIM
+    #ifndef CORENEURON_BUILD
+    /* NEURON: Initialize RNG */
+    nrnran123_State** pv = (nrnran123_State**)(&_p_rng);
+    *pv = nrnran123_newstream3((uint32_t)seed1, (uint32_t)seed2, (uint32_t)seed3);
+    nrnran123_setseq(*pv, 0, 0);
+    #endif
+    ENDVERBATIM
+}
+
+DESTRUCTOR {
+    VERBATIM
+    #ifndef CORENEURON_BUILD
+    /* NEURON: Clean up random stream */
+    nrnran123_State** pv = (nrnran123_State**)(&_p_rng);
+    if (*pv) {
+        nrnran123_deletestream(*pv);
+        *pv = NULL;
+    }
+    #endif
+    ENDVERBATIM
+}
