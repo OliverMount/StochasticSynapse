@@ -89,7 +89,7 @@ for ax, rp in zip(axes, release_probs):
 plt.tight_layout()
 
 # Save to file
-save_path = "../figs/release_prob_traces.png"
+save_path = "../figs/NEURONtest.png"
 plt.savefig(save_path, dpi=300)
 plt.close()
 
