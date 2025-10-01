@@ -8,7 +8,7 @@ COMMENT
 ENDCOMMENT
 
 NEURON {
-    POINT_PROCESS StochExp2Syn
+    POINT_PROCESS StochExp2Syn_temp
     RANGE tau1, tau2, e, i, g, release_prob
     RANGE seed_spatial, seed_temporal
     NONSPECIFIC_CURRENT i
