@@ -1,0 +1,84 @@
+from neuron import h
+import numpy as np
+import matplotlib.pyplot as plt
+import random
+
+h.load_file("stdrun.hoc")
+
+# Simulation params
+n_cells = 5
+tstop = 150
+release_prob = 0.5
+
+# Create shared NetStim
+stim = h.NetStim()
+stim.number = 100
+stim.start = 5
+stim.interval = 10
+stim.noise = 0.03
+
+# Storage
+somas = []
+syns = []
+netcons = []
+voltages = []
+
+# Record time after first section exists
+times = None
+
+for i in range(n_cells):
+    # Create a soma section
+    soma = h.Section(name=f"soma_{i}")
+    soma.L = soma.diam = 10
+    soma.insert('hh')
+    somas.append(soma)
+    
+    # Create synapse (GABAergic)
+    syn = h.GrCGABAexpStoch(soma(0.5))
+    syn.tau1 = 0.25
+    syn.tau2 = 9
+    syn.tau3 = 81
+    syn.c2 = 0.88319
+    syn.egaba = -81
+    syn.release_prob = release_prob
+    syns.append(syn)
+
+    # Assign different random seeds
+    spatial_seed = random.randint(100, 1000)
+    temporal_seed = random.randint(10, 999)
+    syn.setSeeds(spatial_seed, temporal_seed)
+
+    # Connect to shared NetStim
+    nc = h.NetCon(stim, syn)
+    nc.weight[0] = 0.005
+    netcons.append(nc)
+
+    # Record voltage
+    v_vec = h.Vector().record(soma(0.5)._ref_v)
+    voltages.append(v_vec)
+
+    # Record time once
+    if times is None:
+        times = h.Vector().record(h._ref_t)
+
+# Run simulation
+h.finitialize(-65)
+h.continuerun(tstop)
+
+# Plot with vertical offsets
+plt.figure(figsize=(12, 6))
+offset = 30  # vertical spacing in mV
+
+for i, v in enumerate(voltages):
+    v_shifted = np.array(v) + i * offset
+    plt.plot(times, v_shifted, label=f"Cell {i+1}")
+
+plt.xlabel("Time (ms)")
+plt.ylabel("Membrane Voltage + Offset (mV)")
+plt.title("Non-Overlapping Traces of 5 Cells (GrCGABAexpStoch Synapses)")
+plt.yticks([])  # Hide raw y-axis values to emphasize relative differences
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
