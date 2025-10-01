@@ -1,5 +1,8 @@
 # Compiling the mod files
 
+# Please update the paths below for NMODL_PYLIB and  NMODLHOME
+
+
 export NMODL_PYLIB=/usr/lib/x86_64-linux-gnu/libpython3.12.so
 export NMODLHOME=/home/oli/install/
 
