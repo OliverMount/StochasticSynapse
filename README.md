@@ -28,3 +28,21 @@ Thanks to the netstim_inhpoisson.mod file and *to be honest I have not fully und
 
 The figure below shows non-overlapping voltage traces of 5 cells receiving shared stochastic input for different synaptic release probabilities (1.0, 0.5, 0.3, 0.1).
 ![Release Probability Traces](figs/CoreNEURONtest.png)  
+
+ 
+
+## Future Enhancements 
+
+**Unified Mechanism File**: Develop a single .mod file that compiles seamlessly in both NEURON and CoreNEURON, eliminating the need for separate implementations and simplifying maintenance.
+
+**Extended Stochastic Models**: Implement additional biologically realistic features such as:
+
+1. Short-term synaptic plasticity (depression/facilitation)
+2. Calcium-dependent release probability
+3. Multi-vesicular release dynamics
+4. Receptor desensitization
+
+
+**Performance Benchmarking**: Conduct systematic performance comparisons between NEURON and CoreNEURON implementations across different network sizes and GPU configurations.
+
+**Validation Suite**: Create comprehensive unit tests and validation scripts comparing stochastic synapse behavior against experimental data and analytical predictions. 
