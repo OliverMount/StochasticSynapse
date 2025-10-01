@@ -5,3 +5,6 @@ This repository extends the conventional  NEURONSs' `Exp2Syn` synapse model to i
 We introduce stochasticity using a release probability mechanism, enabling diverse response patterns across targets—even with shared presynaptic input. The model can be used for both excitatory and inhibitory synapses, and integrates seamlessly with Python-based simulations.
 
 This work is designed to aid researchers exploring probabilistic synaptic dynamics in both small and large network contexts.
+
+
+
