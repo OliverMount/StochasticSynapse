@@ -1,4 +1,6 @@
+![Last Commit](https://img.shields.io/github/last-commit/OliverMount/StochasticSynapse)
 # Stochastic Synapse
+
 
 This repository extends the conventional  NEURONSs' `Exp2Syn` synapse model to incorporate stochastic vesicle release, providing a more biologically realistic representation of synaptic transmission. We provide seperate mod file one for  `NEURON` and the other one for `CoreNEURON`, ensuring compatibility with GPU-accelerated and large-scale network simulations.
 
